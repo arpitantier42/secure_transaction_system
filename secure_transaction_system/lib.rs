@@ -481,7 +481,7 @@ mod payment_contract {
     //                 default_accounts, set_account_balance, set_callee, set_caller, DefaultAccounts,
     //             },
     //             transfer,
-    //         },
+    //         }
     //         primitives::AccountId,
     //     };
 
