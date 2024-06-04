@@ -2,9 +2,9 @@
 
 #[ink::contract]
 mod payment_contract {
-    use core::ops::{Add, Div, Mul};
+    use core::ops::Add;
 
-    use ink::env::{debug_println, hash};
+    use ink::env:: hash;
     use ink::prelude::vec::Vec;
     use ink::{
         env::{
@@ -31,7 +31,7 @@ mod payment_contract {
     #[derive(scale::Decode, scale::Encode, Debug, Clone)]
     #[cfg_attr(
         feature = "std",
-        derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout,)
+        derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
 
     pub struct PaymentInfo {
@@ -160,7 +160,6 @@ mod payment_contract {
                 status: PaymentStatus::Waiting,
             }
         }
-       
       
         /// Handles payment_info from sender
         #[ink(message, payable)]
@@ -355,7 +354,7 @@ mod payment_contract {
         }
 
          #[ink(message)]
-        pub fn set_threshold_value(&mut self, threshold_value: Balance) -> Result<()> {
+        pub fn set_threshold_amount(&mut self, threshold_value: Balance) -> Result<()> {
             if self.admin == self.env().caller() {
                 self.threshold_value = threshold_value;
                 Ok(())
@@ -365,16 +364,15 @@ mod payment_contract {
         }
 
         #[ink(message)]
-        pub fn view_expiry_time(&self,payment_id: Hash) -> Timestamp{
+        pub fn view_payment_expiry_time(&self,payment_id: Hash) -> Timestamp{
             let time = self.expiry_time;
             let payment_info=self.payment_records.get(payment_id).unwrap();
             let payment_created_time=payment_info.recorded_time;
-            let expiration_time=payment_created_time.add(time);
-            expiration_time
+            payment_created_time.add(time)
         }
 
         #[ink(message)]
-        pub fn set_expiry_time(&mut self, time: Timestamp) -> Result<()> {
+        pub fn set_expiry_period(&mut self, time: Timestamp) -> Result<()> {
             if self.admin == self.env().caller() {
                 self.expiry_time = time;
                 Ok(())
@@ -396,10 +394,6 @@ mod payment_contract {
             payment_info
         }
 
-        #[ink(message)]
-        pub fn view_threshold_value(&self) -> Balance {
-            self.threshold_value.div(u128::pow(10,12))
-        }
 
 
         fn all_attempts_done(&self, payment_info: &mut PaymentInfo, payment_id: Hash) -> Result<()> {
@@ -462,9 +456,8 @@ mod payment_contract {
             amount
            }
     }
-
       
-}
+}   
 
     // #[cfg(test)]
     // mod tests {
