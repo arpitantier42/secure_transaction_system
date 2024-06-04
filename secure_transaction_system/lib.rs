@@ -2,9 +2,9 @@
 
 #[ink::contract]
 mod payment_contract {
-    use core::ops::{Add, Div, Mul};
+    use core::ops::Add;
 
-    use ink::env::{debug_println, hash};
+    use ink::env:: hash;
     use ink::prelude::vec::Vec;
     use ink::{
         env::{
@@ -31,7 +31,7 @@ mod payment_contract {
     #[derive(scale::Decode, scale::Encode, Debug, Clone)]
     #[cfg_attr(
         feature = "std",
-        derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout,)
+        derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
 
     pub struct PaymentInfo {
@@ -160,7 +160,6 @@ mod payment_contract {
                 status: PaymentStatus::Waiting,
             }
         }
-       
       
         /// Handles payment_info from sender
         #[ink(message, payable)]
@@ -355,7 +354,7 @@ mod payment_contract {
         }
 
          #[ink(message)]
-        pub fn set_threshold_value(&mut self, threshold_value: Balance) -> Result<()> {
+        pub fn set_threshold_amount(&mut self, threshold_value: Balance) -> Result<()> {
             if self.admin == self.env().caller() {
                 self.threshold_value = threshold_value;
                 Ok(())
@@ -365,16 +364,15 @@ mod payment_contract {
         }
 
         #[ink(message)]
-        pub fn view_expiry_time(&self,payment_id: Hash) -> Timestamp{
+        pub fn view_payment_expiry_time(&self,payment_id: Hash) -> Timestamp{
             let time = self.expiry_time;
             let payment_info=self.payment_records.get(payment_id).unwrap();
             let payment_created_time=payment_info.recorded_time;
-            let expiration_time=payment_created_time.add(time);
-            expiration_time
+            payment_created_time.add(time)
         }
 
         #[ink(message)]
-        pub fn set_expiry_time(&mut self, time: Timestamp) -> Result<()> {
+        pub fn set_expiry_period(&mut self, time: Timestamp) -> Result<()> {
             if self.admin == self.env().caller() {
                 self.expiry_time = time;
                 Ok(())
@@ -396,10 +394,6 @@ mod payment_contract {
             payment_info
         }
 
-        #[ink(message)]
-        pub fn view_threshold_value(&self) -> Balance {
-            self.threshold_value.div(u128::pow(10,12))
-        }
 
 
         fn all_attempts_done(&self, payment_info: &mut PaymentInfo, payment_id: Hash) -> Result<()> {
@@ -462,142 +456,9 @@ mod payment_contract {
             amount
            }
     }
-
       
-}
 
-    // #[cfg(test)]
-    // mod tests {
-    //     use ink::env::{
-    //         debug_print,
-    //         test::{self, recorded_events, set_block_timestamp, transfer_in},
-    //         DefaultEnvironment,
-    //     };
-
-    //     use super::*;
-    //     use ink::{
-    //         env::{
-    //             test::{
-    //                 default_accounts, set_account_balance, set_callee, set_caller, DefaultAccounts,
-    //             },
-    //             transfer,
-    //         }
-    //         primitives::AccountId,
-    //     };
-
-    //     #[ink::test]
-    //     fn new_works() {
-    //         let admin = AccountId::from([0x03; 32]);
-    //         let sts_contract = PaymentContract::new(admin);
-
-    //         // Transfer event triggered during initial construction.
-    //         let emitted_events = ink::env::test::recorded_events().collect::<Vec<_>>();
-    //         assert_eq!(0, emitted_events.len());
-    //     }
-
-    //     #[ink::test]
-    //     fn test_otp_generation() {
-    //         let mut sts_contract = init_contract();
-    //         let mut map = ink::prelude::collections::HashMap::new();
-
-    //         for _i in 0..1000_000 {
-    //             let otp = sts_contract.get_pseudo_random();
-    //             if map.contains_key(&otp) {
-    //                 let val = *map.get(&otp).unwrap();
-    //                 map.insert(otp, val + 1);
-    //             } else {
-    //                 map.insert(otp, 1);
-    //             }
-    //             // debug_println!("{} OTP: {}", _i, otp);
-    //         }
-
-    //         for (k, v) in map.into_iter() {
-    //             if v != 1 {
-    //                 debug_println!("otp: {}, freq: {}", k, v);
-    //             }
-    //         }
-    //     }
-
-    //     #[ink::test]
-    //     fn check_threshold() {
-    //         // let alice: AccountId = default_accounts::<DefaultAccounts>().alice;
-    //         // let mut sts_contract = PaymentContract::new(alice);
-    //         let admin = AccountId::from([0x03; 32]);
-    //         let mut sts_contract = PaymentContract::new(admin);
-
-    //         let initial = sts_contract.view_threshold_value();
-    //         assert_eq!(100, initial);
-
-    //         set_caller::<DefaultEnvironment>(admin);
-    //         let result = sts_contract.set_threshold_value(1000);
-    //         assert_eq!(result, Ok(()));
-    //         assert_eq!(1000, sts_contract.view_threshold_value());
-
-    //         set_caller::<DefaultEnvironment>(AccountId::from([0x04; 32]));
-    //         let result = sts_contract.set_threshold_value(100);
-    //         assert_eq!(result, Err(Error::InvalidCaller));
-    //     }
-
-    //     #[test]
-    //     fn test_creating_payment_record() {
-    //         let receiver = AccountId::from([0x05; 32]);
-    //         let sender = AccountId::from([0x04; 32]);
-    //         let admin = AccountId::from([0x03; 32]);
-
-    //         let mut sts_contract = init_contract();
-
-    //         set_caller::<DefaultEnvironment>(admin);
-    //         let threshold = sts_contract.set_threshold_value(1000);
-    //         let amount = 100;
-    //         let otp = sts_contract.get_pseudo_random();
-
-    //         // let contract_id = ink::env::account_id::<DefaultEnvironment>();
-    //         // transfer::<DefaultEnvironment>(contract_id, amount);
-
-    //         set_caller::<DefaultEnvironment>(sender);
-    //         set_callee::<DefaultEnvironment>(receiver);
-    //         set_account_balance::<DefaultEnvironment>(sender, 5000);
-    //         transfer_in::<DefaultEnvironment>(amount);
-
-    //         let result = sts_contract.send_payment(receiver, amount);
-    //         assert_eq!(result, Err(Error::BelowThresholdValue));
-
-    //         set_caller::<DefaultEnvironment>(sender);
-    //         set_callee::<DefaultEnvironment>(receiver);
-    //         transfer_in::<DefaultEnvironment>(1000);
-    //         let result = sts_contract.send_payment(receiver, 2000);
-    //         assert_eq!(result, Err(Error::BalanceMismatch));
-
-    //         set_caller::<DefaultEnvironment>(sender);
-    //         set_callee::<DefaultEnvironment>(receiver);
-    //         set_account_balance::<DefaultEnvironment>(sender, 5000);
-    //         transfer_in::<DefaultEnvironment>(2000);
-    //         set_block_timestamp::<DefaultEnvironment>(100);
-    //         let result = sts_contract.send_payment(receiver, 2000);
-    //         let result = sts_contract.send_payment(receiver, 2000);
-    //         assert_eq!(result, Err(Error::TxnIDAlreadExists));
-
-    //         set_caller::<DefaultEnvironment>(sender);
-    //         set_callee::<DefaultEnvironment>(receiver);
-    //         transfer_in::<DefaultEnvironment>(2000);
-    //         set_block_timestamp::<DefaultEnvironment>(200);
-    //         let result = sts_contract.send_payment(receiver, 2000);
-    //         // assert_eq!(result, Ok());
-    //         let events = recorded_events().collect::<Vec<_>>();
-    //         assert_eq!(1, events.len());
-    //     }
-
-    //     #[test]
-    //     fn test_otp_verify() {}
-
-    //     fn init_contract() -> PaymentContract {
-    //         set_caller::<DefaultEnvironment>(default_accounts::<DefaultEnvironment>().alice);
-    //         let admin = AccountId::from([0x03; 32]);
-    //         PaymentContract::new(admin)
-    //     }
-    // }
-
-
+} 
 
 // #![cfg_attr(not(feature = "std"), no_std,no_main)]
 
